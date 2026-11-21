@@ -17,9 +17,10 @@ typedef struct {
     stringDesc descripcion;
     bool anticipo;
     float montoanticipo;
+    float importe;         // Importe total del pedido
 } tPedido;
 
-// Función para mostrar el menú
+// Funcion para mostrar el menu
 int menu() {
     int opcion;
     printf("\n--- GESTION DE PEDIDOS (EN MEMORIA) ---\n");
@@ -37,7 +38,7 @@ int menu() {
 int cargarArchivoAVector(const char *pArchivo, tPedido pVector[]) {
     FILE *archivo = fopen(pArchivo, "rb");
     if (archivo == NULL) {
-        return 0; // Si no existe el archivo aún, hay 0 pedidos cargados
+        return 0; // Si no existe el archivo aun, hay 0 pedidos cargados
     }
 
     int cant = 0;
@@ -46,18 +47,18 @@ int cargarArchivoAVector(const char *pArchivo, tPedido pVector[]) {
     }
 
     fclose(archivo);
-    return cant; 
+    return cant;
 }
 
 // Guarda todo el vector de vuelta al archivo binario al salir
 void guardarVectorAArchivo(const char *pArchivo, tPedido pVector[], int pCant) {
-    FILE *archivo = fopen(pArchivo, "wb"); 
+    FILE *archivo = fopen(pArchivo, "wb");
     if (archivo == NULL) {
         printf("Error al abrir el archivo para guardar.\n");
         return;
     }
-
-    for (int i = 0; i < pCant; i++) {
+    int i;
+    for (i = 0; i < pCant; i++) {
         fwrite(&pVector[i], sizeof(tPedido), 1, archivo);
     }
 
@@ -67,8 +68,9 @@ void guardarVectorAArchivo(const char *pArchivo, tPedido pVector[], int pCant) {
 // Ordena el vector por fecha de entrega usando Bubble Sort
 void ordenarPorFecha(tPedido pVector[], int pCant) {
     tPedido aux;
-    for (int i = 0; i < pCant - 1; i++) {
-        for (int j = 0; j < pCant - i - 1; j++) {
+    int i, j;
+    for (i = 0; i < pCant - 1; i++) {
+        for (j = 0; j < pCant - i - 1; j++) {
             if (strcmp(pVector[j].fechaDeEntrega, pVector[j+1].fechaDeEntrega) > 0) {
                 aux = pVector[j];
                 pVector[j] = pVector[j+1];
@@ -78,7 +80,7 @@ void ordenarPorFecha(tPedido pVector[], int pCant) {
     }
 }
 
-// Función para solicitar y cargar los datos de un nuevo pedido en el vector
+// Funcion para solicitar y cargar los datos de un nuevo pedido en el vector
 void agregarPedido(tPedido pVector[], int *pCant) {
     if (*pCant >= MAX_PEDIDOS) {
         printf("Capacidad maxima de pedidos alcanzada.\n");
@@ -100,6 +102,9 @@ void agregarPedido(tPedido pVector[], int *pCant) {
     printf("Descripcion: ");
     scanf(" %99[^\n]", nuevo.descripcion);
 
+    printf("Importe total del pedido: ");
+    scanf("%f", &nuevo.importe);
+
     printf("Tiene anticipo? (1: Si / 0: No): ");
     scanf("%d", &tieneAnticipo);
     nuevo.anticipo = (tieneAnticipo == 1);
@@ -116,7 +121,7 @@ void agregarPedido(tPedido pVector[], int *pCant) {
     printf("Pedido agregado al vector con exito.\n");
 }
 
-// Función para ver los pedidos ordenados por fecha
+// Funcion para ver los pedidos ordenados por fecha
 void verPedidos(tPedido pVector[], int pCant) {
     if (pCant == 0) {
         printf("No hay pedidos registrados.\n");
@@ -126,18 +131,20 @@ void verPedidos(tPedido pVector[], int pCant) {
     ordenarPorFecha(pVector, pCant);
 
     printf("\n--- LISTA DE PEDIDOS (ORDENADOS POR FECHA) ---\n");
-    for (int i = 0; i < pCant; i++) {
-        printf("ID: %d | Cliente: %s | Entrega: %s | Desc: %s | Anticipo: %s ($%.2f)\n",
+    int i;
+    for (i = 0; i < pCant; i++) {
+        printf("ID: %d | Cliente: %s | Entrega: %s | Desc: %s | Importe: $%.2f | Anticipo: %s ($%.2f)\n",
                pVector[i].idPedido,
                pVector[i].cliente,
                pVector[i].fechaDeEntrega,
                pVector[i].descripcion,
+               pVector[i].importe,
                pVector[i].anticipo ? "Si" : "No",
                pVector[i].montoanticipo);
     }
 }
 
-// Función para buscar un pedido por cliente en el vector
+// Funcion para buscar un pedido por cliente en el vector
 void buscarPorCliente(tPedido pVector[], int pCant) {
     char clienteBuscado[50];
     bool encontrado = false;
@@ -147,13 +154,15 @@ void buscarPorCliente(tPedido pVector[], int pCant) {
 
     printf("\n--- RESULTADOS DE LA BUSQUEDA PARA: %s ---\n", clienteBuscado);
 
-    for (int i = 0; i < pCant; i++) {
+    int i;
+    for (i = 0; i < pCant; i++) {
         if (strcmp(pVector[i].cliente, clienteBuscado) == 0) {
-            printf("ID: %d | Cliente: %s | Entrega: %s | Desc: %s | Anticipo: %s ($%.2f)\n",
+            printf("ID: %d | Cliente: %s | Entrega: %s | Desc: %s | Importe: $%.2f | Anticipo: %s ($%.2f)\n",
                    pVector[i].idPedido,
                    pVector[i].cliente,
                    pVector[i].fechaDeEntrega,
                    pVector[i].descripcion,
+                   pVector[i].importe,
                    pVector[i].anticipo ? "Si" : "No",
                    pVector[i].montoanticipo);
             encontrado = true;
@@ -165,15 +174,16 @@ void buscarPorCliente(tPedido pVector[], int pCant) {
     }
 }
 
-// Función para eliminar un pedido del vector
+// Funcion para eliminar un pedido del vector
 void eliminarPedido(tPedido pVector[], int *pCant) {
     int idBuscado;
     int pos = -1;
+    int i;
 
     printf("Ingrese el ID del pedido entregado que desea eliminar: ");
     scanf("%d", &idBuscado);
 
-    for (int i = 0; i < *pCant; i++) {
+    for (i = 0; i < *pCant; i++) {
         if (pVector[i].idPedido == idBuscado) {
             pos = i;
             break;
@@ -181,7 +191,7 @@ void eliminarPedido(tPedido pVector[], int *pCant) {
     }
 
     if (pos != -1) {
-        for (int i = pos; i < *pCant - 1; i++) {
+        for (i = pos; i < *pCant - 1; i++) {
             pVector[i] = pVector[i + 1];
         }
         (*pCant)--;
